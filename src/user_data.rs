@@ -17,8 +17,12 @@ sol_storage! {
         address token_id;
         bool is_safe_mode;
         uint256 interest_accumulated;
+        uint256 penalty_perc;
     }
 }
+
+const HUNDRED_PERC: U256 = U256::from(100);
+const ZERO: U256 = U256::from(100);
 
 impl UserData {
     pub fn get_user_id(&self) -> U256 {
@@ -26,7 +30,12 @@ impl UserData {
     }
 
     fn calculate_new_interest(&self, amount: U256) -> U256 {
-        amount * U256::from(1) / U256::from(100)
+        amount * U256::from(1) / HUNDRED_PERC
+    }
+
+    fn calculate_balance_from_penalty(amount: U256, penalty_perc: U256) -> U256 {
+        let perc_value = amount * penalty_perc / HUNDRED_PERC;
+        amount - perc_value
     }
 
     pub fn create_saving_data(
@@ -35,6 +44,7 @@ impl UserData {
         amount_of_saving: U256,
         token_id: Address,
         maturity_time: U256,
+        penalty_perc: U256,
     ) -> Result<(), Vec<u8>> {
         let fetched_saving = self.savings_map.get(name_of_saving.clone());
 
@@ -50,7 +60,7 @@ impl UserData {
         //     amount: amount_of_saving.into(),
         //     start_time: block::timestamp(),
         //     maturity_time,
-        //     interest_accumulated: U256::from(0),
+        //     interest_accumulated: ZERO,
         //     is_safe_mode,
         // };
 
@@ -61,8 +71,9 @@ impl UserData {
         new_saving.token_id.set(token_id);
         new_saving.maturity_time.set(maturity_time);
         new_saving.start_time.set(U256::from(block::timestamp()));
-        new_saving.interest_accumulated.set(U256::from(0));
+        new_saving.interest_accumulated.set(ZERO);
         new_saving.amount.set(amount_of_saving);
+        new_saving.penalty_perc.set(penalty_perc);
 
         Ok(())
     }
@@ -93,5 +104,36 @@ impl UserData {
 
         // saving updated
         Ok(())
+    }
+
+    pub fn withdraw_saving_data(&mut self, name_of_saving: String) -> Result<U256, Vec<u8>> {
+        let saving_data = self.savings_map.get(name_of_saving.clone());
+        if !saving_data.is_valid.get() {
+            return Err(format!("Saving `{}` doesn't exist", name_of_saving).into());
+        }
+
+        let mut withdraw_amount: U256 = ZERO;
+
+        // check if maturity is complete
+        let saving_amount = saving_data.amount.get();
+        if saving_data.maturity_time.get() < U256::from(block::timestamp()) {
+            // saving isn't complete, remove percentage
+            withdraw_amount =
+                Self::calculate_balance_from_penalty(saving_amount, saving_data.penalty_perc.get());
+        } else {
+            // saving complete, send interest
+            withdraw_amount = saving_amount;
+            // todo: send interest
+        }
+
+        // clear saving data
+        // is_valid, amount, interest_accumulated, penalty_perc
+        let mut saving_updater = self.savings_map.setter(name_of_saving);
+        saving_updater.is_valid.set(false);
+        saving_updater.amount.set(ZERO);
+        saving_updater.interest_accumulated.set(ZERO);
+        saving_updater.penalty_perc.set(ZERO);
+
+        Ok(withdraw_amount)
     }
 }
