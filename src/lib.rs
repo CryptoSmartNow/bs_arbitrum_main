@@ -29,11 +29,13 @@ extern crate alloc;
 #[global_allocator]
 static ALLOC: mini_alloc::MiniAlloc = mini_alloc::MiniAlloc::INIT;
 
-use alloy_sol_types::sol_data::Bool;
-/// Import items from the SDK. The prelude contains common traits and macros.
-use stylus_sdk::{alloy_primitives::U256, prelude::*};
+use std::borrow::Borrow;
 
-mod userData;
+/// Import items from the SDK. The prelude contains common traits and macros.
+use stylus_sdk::{alloy_primitives::U256, msg, prelude::*, storage::StorageBool};
+use user_data::UserData;
+
+mod user_data;
 
 // Define some persistent storage using the Solidity ABI.
 // `Counter` will be the entrypoint.
@@ -46,7 +48,7 @@ sol_storage! {
     #[entrypoint]
     pub struct Bitsave {
         uint256 user_count;
-        mapping(address => userData) users_mapping;
+        mapping(address => UserData) users_mapping;
     }
 }
 
@@ -74,16 +76,39 @@ impl Counter {
 impl Bitsave {
     /// Helpers
     // get user
-    fn get_user() -> Bool {
-        true
-    }
+    // fn get_user(&self) -> User_data {
+    //     self.users_mapping.get(msg::sender());
+    //     todo!()
+    // }
 
     /// Joining bitsave: Initiates
     /// 1. user mapping (address -> savingsMap)
     /// 2. user savings names
-    pub fn join_bitsave(&mut self) -> Result<(), Vec<u8>> {
+    pub fn join_bitsave(&mut self) -> Result<bool, Vec<u8>> {
         // check user doesn't exist
+        let fetched_user = self.users_mapping.get(msg::sender());
+        if *fetched_user.user_exists {
+            return Err(
+                format!("User {:?} has joined bitsave already", fetched_user.user_id).into(),
+            );
+        };
 
+        // incr user count
+        let new_user_count = self.user_count.get() + U256::from(1);
+        self.user_count.set(new_user_count);
+
+        let mut fetched_user = self.users_mapping.setter(msg::sender());
+        // update user data
+        fetched_user.user_exists.set(true);
+        fetched_user.user_id.set(new_user_count);
+        fetched_user.user_address.set(msg::sender());
+
+        // return user exists txn
+        Ok(fetched_user.user_exists.get())
+    }
+
+    /// Create savings:
+    pub fn create_saving(&mut self) -> Result<(), Vec<u8>> {
         Ok(())
     }
 }

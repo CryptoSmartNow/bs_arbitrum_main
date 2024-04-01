@@ -1,0 +1,97 @@
+use alloy_primitives::{Address, U256};
+use stylus_sdk::{block, stylus_proc::sol_storage};
+
+sol_storage! {
+    pub struct UserData {
+        address user_address;
+        uint256 user_id;
+        bool user_exists;
+        mapping(string => SavingData) savings_map;
+    }
+
+    pub struct SavingData {
+        bool is_valid;
+        uint256 amount;
+        uint256 maturity_time;
+        uint256 start_time;
+        address token_id;
+        bool is_safe_mode;
+        uint256 interest_accumulated;
+    }
+}
+
+impl UserData {
+    pub fn get_user_id(&self) -> U256 {
+        self.user_id.get()
+    }
+
+    fn calculate_new_interest(&self, amount: U256) -> U256 {
+        amount * U256::from(1) / U256::from(100)
+    }
+
+    pub fn create_saving_data(
+        &mut self,
+        name_of_saving: String,
+        amount_of_saving: U256,
+        token_id: Address,
+        maturity_time: U256,
+    ) -> Result<(), Vec<u8>> {
+        let fetched_saving = self.savings_map.get(name_of_saving.clone());
+
+        // error if saving exists
+        if fetched_saving.is_valid.get() {
+            return Err(format!("Saving `{}` already exist", name_of_saving).into());
+        };
+
+        // initiate saving object
+        // let new_saving = SavingData {
+        //     is_valid: true.into(),
+        //     token_id,
+        //     amount: amount_of_saving.into(),
+        //     start_time: block::timestamp(),
+        //     maturity_time,
+        //     interest_accumulated: U256::from(0),
+        //     is_safe_mode,
+        // };
+
+        let mut new_saving = self.savings_map.setter(name_of_saving);
+        // update saving data
+        new_saving.is_safe_mode.set(true);
+        new_saving.is_valid.set(true);
+        new_saving.token_id.set(token_id);
+        new_saving.maturity_time.set(maturity_time);
+        new_saving.start_time.set(U256::from(block::timestamp()));
+        new_saving.interest_accumulated.set(U256::from(0));
+        new_saving.amount.set(amount_of_saving);
+
+        Ok(())
+    }
+
+    pub fn increment_saving_data(
+        &mut self,
+        name_of_saving: String,
+        new_amount: U256,
+    ) -> Result<(), Vec<u8>> {
+        let saving_data = self.savings_map.get(name_of_saving.clone());
+        if !saving_data.is_valid.get() {
+            return Err(format!("Saving `{}` doesn't exist", name_of_saving).into());
+        };
+
+        let old_interest = saving_data.interest_accumulated.get();
+        let old_amount = saving_data.amount.get();
+
+        // saving is valid, increment the saving data
+        let new_interest = self.calculate_new_interest(new_amount);
+
+        let mut saving_updater = self.savings_map.setter(name_of_saving);
+
+        // increment amount and interest
+        saving_updater
+            .interest_accumulated
+            .set(old_interest + new_interest);
+        saving_updater.amount.set(old_amount + new_amount);
+
+        // saving updated
+        Ok(())
+    }
+}
