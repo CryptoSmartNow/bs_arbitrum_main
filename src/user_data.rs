@@ -80,11 +80,17 @@ impl UserData {
         &mut self,
         name_of_saving: String,
         new_amount: U256,
+        token_id: Address,
     ) -> Result<(), Vec<u8>> {
         let saving_data = self.savings_map.get(name_of_saving.clone());
         if !saving_data.is_valid.get() {
             return Err(format!("Saving `{}` doesn't exist", name_of_saving).into());
         };
+
+        if !saving_data.token_id.eq(&token_id) {
+            // token not same with one being saved
+            return Err("Different token being saved, create new saving".into());
+        }
 
         let old_interest = saving_data.interest_accumulated.get();
         let old_amount = saving_data.amount.get();

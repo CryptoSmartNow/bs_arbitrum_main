@@ -143,4 +143,34 @@ impl Bitsave {
 
         Ok(())
     }
+
+    /// Increment savings
+    pub fn increment_saving(&mut self, name_of_saving: String) -> Result<(), Vec<u8>> {
+        // retrieve some data
+        // fetch user's data
+        let fetched_user = self.users_mapping.get(msg::sender());
+        if !fetched_user.user_exists.get() {
+            return Err("User doesn't exist".into());
+        }
+
+        let amount_to_add = msg::value();
+        let token_id = Address::ZERO; // todo: fix in token address
+
+        // user setter
+        let mut user_updater = self.users_mapping.setter(msg::sender());
+        user_updater.increment_saving_data(name_of_saving, amount_to_add, token_id)?;
+        Ok(())
+    }
+
+    /// Withdraw savings
+    pub fn withdraw_savings(&mut self, name_of_saving: String) -> Result<U256, Vec<u8>> {
+        let fetched_user = self.users_mapping.get(msg::sender());
+        if !fetched_user.user_exists.get() {
+            return Err("User doesn't exist".into());
+        }
+
+        // user updater
+        let mut user_updater = self.users_mapping.setter(msg::sender());
+        user_updater.withdraw_saving_data(name_of_saving)
+    }
 }
