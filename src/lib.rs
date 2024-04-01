@@ -29,20 +29,29 @@ extern crate alloc;
 #[global_allocator]
 static ALLOC: mini_alloc::MiniAlloc = mini_alloc::MiniAlloc::INIT;
 
+use alloy_sol_types::sol_data::Bool;
 /// Import items from the SDK. The prelude contains common traits and macros.
 use stylus_sdk::{alloy_primitives::U256, prelude::*};
+
+mod userData;
 
 // Define some persistent storage using the Solidity ABI.
 // `Counter` will be the entrypoint.
 sol_storage! {
-    #[entrypoint]
+    // #[entrypoint]
     pub struct Counter {
         uint256 number;
+    }
+
+    #[entrypoint]
+    pub struct Bitsave {
+        uint256 user_count;
+        mapping(address => userData) users_mapping;
     }
 }
 
 /// Declare that `Counter` is a contract with the following external methods.
-#[external]
+// #[external]
 impl Counter {
     /// Gets the number from storage.
     pub fn number(&self) -> U256 {
@@ -58,5 +67,23 @@ impl Counter {
     pub fn increment(&mut self) {
         let number = self.number.get();
         self.set_number(number + U256::from(1));
+    }
+}
+
+#[external]
+impl Bitsave {
+    /// Helpers
+    // get user
+    fn get_user() -> Bool {
+        true
+    }
+
+    /// Joining bitsave: Initiates
+    /// 1. user mapping (address -> savingsMap)
+    /// 2. user savings names
+    pub fn join_bitsave(&mut self) -> Result<(), Vec<u8>> {
+        // check user doesn't exist
+
+        Ok(())
     }
 }
