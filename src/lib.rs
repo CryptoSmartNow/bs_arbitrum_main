@@ -29,10 +29,13 @@ extern crate alloc;
 #[global_allocator]
 static ALLOC: mini_alloc::MiniAlloc = mini_alloc::MiniAlloc::INIT;
 
-use std::borrow::Borrow;
-
+use alloy_primitives::Address;
 /// Import items from the SDK. The prelude contains common traits and macros.
-use stylus_sdk::{alloy_primitives::U256, msg, prelude::*, storage::StorageBool};
+use stylus_sdk::{
+    alloy_primitives::{U256, U8},
+    msg,
+    prelude::*,
+};
 use user_data::UserData;
 
 mod user_data;
@@ -51,6 +54,8 @@ sol_storage! {
         mapping(address => UserData) users_mapping;
     }
 }
+
+/// impl for borrow and borrowMut
 
 /// Declare that `Counter` is a contract with the following external methods.
 // #[external]
@@ -87,7 +92,7 @@ impl Bitsave {
     pub fn join_bitsave(&mut self) -> Result<bool, Vec<u8>> {
         // check user doesn't exist
         let fetched_user = self.users_mapping.get(msg::sender());
-        if *fetched_user.user_exists {
+        if fetched_user.user_exists.get() {
             return Err(
                 format!("User {:?} has joined bitsave already", fetched_user.user_id).into(),
             );
@@ -108,7 +113,34 @@ impl Bitsave {
     }
 
     /// Create savings:
-    pub fn create_saving(&mut self) -> Result<(), Vec<u8>> {
+    pub fn create_saving(
+        &mut self,
+        name_of_saving: String,
+        maturity_time: U256,
+        penalty_perc: u8,
+        use_safe_mode: bool,
+    ) -> Result<(), Vec<u8>> {
+        // retrieve some data
+        // fetch user's data
+        let fetched_user = self.users_mapping.get(msg::sender());
+        if !fetched_user.user_exists.get() {
+            return Err("User doesn't exist".into());
+        }
+
+        let amount_of_saving = msg::value();
+        let token_id = Address::ZERO; // todo: fix in token address
+
+        // user setter
+        let mut user_updater = self.users_mapping.setter(msg::sender());
+        user_updater.create_saving_data(
+            name_of_saving,
+            amount_of_saving,
+            token_id,
+            maturity_time,
+            penalty_perc,
+            use_safe_mode,
+        )?;
+
         Ok(())
     }
 }
