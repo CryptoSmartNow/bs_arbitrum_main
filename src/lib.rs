@@ -31,13 +31,16 @@ static ALLOC: mini_alloc::MiniAlloc = mini_alloc::MiniAlloc::INIT;
 
 use alloy_primitives::Address;
 /// Import items from the SDK. The prelude contains common traits and macros.
+use errors::{BResult, BitsaveErrors, UserNotExist};
 use stylus_sdk::{
     alloy_primitives::{U256, U8},
+    call::{call, Call},
     msg,
     prelude::*,
 };
 use user_data::UserData;
 
+mod errors;
 mod user_data;
 
 // Define some persistent storage using the Solidity ABI.
@@ -98,6 +101,9 @@ impl Bitsave {
             );
         };
 
+        // check for joining fee todo
+        // if ()
+
         // incr user count
         let new_user_count = self.user_count.get() + U256::from(1);
         self.user_count.set(new_user_count);
@@ -119,12 +125,12 @@ impl Bitsave {
         maturity_time: U256,
         penalty_perc: u8,
         use_safe_mode: bool,
-    ) -> Result<(), Vec<u8>> {
+    ) -> Result<()> {
         // retrieve some data
         // fetch user's data
         let fetched_user = self.users_mapping.get(msg::sender());
         if !fetched_user.user_exists.get() {
-            return Err("User doesn't exist".into());
+            return Err(BitsaveErrors::UserNotExist(UserNotExist {}));
         }
 
         let amount_of_saving = msg::value();
@@ -145,7 +151,7 @@ impl Bitsave {
     }
 
     /// Increment savings
-    pub fn increment_saving(&mut self, name_of_saving: String) -> Result<(), Vec<u8>> {
+    pub fn increment_saving(&mut self, name_of_saving: String) -> BResult<()> {
         // retrieve some data
         // fetch user's data
         let fetched_user = self.users_mapping.get(msg::sender());
@@ -171,6 +177,11 @@ impl Bitsave {
 
         // user updater
         let mut user_updater = self.users_mapping.setter(msg::sender());
-        user_updater.withdraw_saving_data(name_of_saving)
+        let with_amount = user_updater.withdraw_saving_data(name_of_saving)?;
+
+        // transfer funds
+        call(Call::new_in(self).value(with_amount), msg::sender(), &[])?;
+
+        Ok(with_amount)
     }
 }

@@ -1,6 +1,8 @@
 use alloy_primitives::{Address, U256, U8};
 use stylus_sdk::{block, stylus_proc::sol_storage};
 
+use crate::errors::{BitsaveErrors, GeneralError};
+
 sol_storage! {
     pub struct UserData {
         address user_address;
@@ -20,6 +22,8 @@ sol_storage! {
         uint8 penalty_perc;
     }
 }
+
+type BResult<T, E = BitsaveErrors> = core::result::Result<T, E>;
 
 impl UserData {
     pub fn get_user_id(&self) -> U256 {
@@ -43,12 +47,12 @@ impl UserData {
         maturity_time: U256,
         penalty_perc: u8,
         use_safe_mode: bool,
-    ) -> Result<(), Vec<u8>> {
+    ) -> BResult<()> {
         let fetched_saving = self.savings_map.get(name_of_saving.clone());
 
         // error if saving exists
         if fetched_saving.is_valid.get() {
-            return Err(format!("Saving `{}` already exist", name_of_saving).into());
+            return Err(BitsaveErrors::GeneralError(GeneralError {}));
         };
 
         // initiate saving object
