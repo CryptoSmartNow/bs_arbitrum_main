@@ -6,18 +6,20 @@
 use alloy_primitives::U256;
 use dotenv::dotenv;
 use ethers::{
+    abi::AbiEncode,
+    contract::ContractError,
     middleware::SignerMiddleware,
     prelude::abigen,
     providers::{Http, Middleware, Provider},
     signers::{LocalWallet, Signer},
-    types::Address,
+    types::{Address, Bytes},
 };
 use eyre::eyre;
 use std::io::{BufRead, BufReader};
 use std::str::FromStr;
 use std::string;
 use std::sync::Arc;
-use stylus_sdk::call::Call;
+use stylus_sdk::call::Error;
 
 /// Your private key file path.
 const PRIV_KEY_PATH: &str = "PRIV_KEY_PATH";
@@ -70,11 +72,13 @@ async fn main() -> eyre::Result<()> {
 
     let create_res = bitsave
         .create_saving("schoolFee".to_string(), 1714242866.into(), 2, false)
-        .value(12.into())
         .call()
         .await;
     println!("Create saving bitsave return value = {:?}", create_res);
 
+    if let Err(ContractError::Revert(Bytes(err_vec))) = create_res {
+        println!("{:?}", err_vec)
+    }
     // let _ = counter.increment().send().await?.await?;
 
     // let num = counter.number().call().await;

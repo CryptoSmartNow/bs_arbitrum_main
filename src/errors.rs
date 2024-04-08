@@ -13,12 +13,12 @@ pub enum BitsaveErrors {
     FromUtf8Error(FromUtf8Error),
 }
 
-impl Into<Vec<u8>> for BitsaveErrors {
-    fn into(self) -> Vec<u8> {
-        match self {
-            Self::UserNotExist(err) => err.encode(),
-            Self::GeneralError(err) => err.encode(),
-            Self::FromUtf8Error(err) => err.into_bytes(),
+impl From<BitsaveErrors> for Vec<u8> {
+    fn from(val: BitsaveErrors) -> Self {
+        match val {
+            BitsaveErrors::UserNotExist(err) => err.encode(),
+            BitsaveErrors::GeneralError(err) => err.encode(),
+            BitsaveErrors::FromUtf8Error(err) => err.into_bytes(),
         }
     }
 }

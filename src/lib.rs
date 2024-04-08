@@ -125,12 +125,13 @@ impl Bitsave {
         maturity_time: U256,
         penalty_perc: u8,
         use_safe_mode: bool,
-    ) -> Result<()> {
+    ) -> Result<(), Vec<u8>> {
         // retrieve some data
         // fetch user's data
         let fetched_user = self.users_mapping.get(msg::sender());
         if !fetched_user.user_exists.get() {
-            return Err(BitsaveErrors::UserNotExist(UserNotExist {}));
+            println!("User not found");
+            return Err(BitsaveErrors::UserNotExist(UserNotExist {}).into());
         }
 
         let amount_of_saving = msg::value();
@@ -138,20 +139,24 @@ impl Bitsave {
 
         // user setter
         let mut user_updater = self.users_mapping.setter(msg::sender());
-        user_updater.create_saving_data(
+        let res = user_updater.create_saving_data(
             name_of_saving,
             amount_of_saving,
             token_id,
             maturity_time,
             penalty_perc,
             use_safe_mode,
-        )?;
+        );
+
+        if let Err(res_err) = res {
+            return Err(res_err.into());
+        }
 
         Ok(())
     }
 
     /// Increment savings
-    pub fn increment_saving(&mut self, name_of_saving: String) -> BResult<()> {
+    pub fn increment_saving(&mut self, name_of_saving: String) -> Result<(), Vec<u8>> {
         // retrieve some data
         // fetch user's data
         let fetched_user = self.users_mapping.get(msg::sender());
