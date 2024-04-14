@@ -44,7 +44,8 @@ async fn main() -> eyre::Result<()> {
     abigen!(
         Bitsave,
         r#"[
-            function joinBitsave() external returns (bool)
+            function getBitsaveUserCount() external view returns (uint256)
+            function joinBitsave() external returns (address)
             function createSaving(string calldata name_of_saving, uint256 maturity_time, uint8 penalty_perc, bool use_safe_mode) external
 
             function incrementSaving(string calldata name_of_saving) external
@@ -66,9 +67,15 @@ async fn main() -> eyre::Result<()> {
 
     let bitsave = Bitsave::new(address, client);
 
-    // let join_res = bitsave.join_bitsave().call().await;
+    let join_res = bitsave.join_bitsave().call().await;
 
-    // println!("Join bitsave return value = {:?}", join_res);
+    println!("Join bitsave return value = {:?}", join_res);
+    if let Err(ContractError::Revert(Bytes(join_val))) = join_res {
+        println!("{:?}", String::from_utf8(join_val.encode()));
+    };
+
+    let count_res = bitsave.get_bitsave_user_count().call().await;
+    println!("Bitsave user count = {:?}", count_res);
 
     let create_res = bitsave
         .create_saving("schoolFee".to_string(), 1714242866.into(), 2, false)
@@ -76,9 +83,13 @@ async fn main() -> eyre::Result<()> {
         .await;
     println!("Create saving bitsave return value = {:?}", create_res);
 
-    if let Err(ContractError::Revert(Bytes(err_vec))) = create_res {
-        println!("{:?}", err_vec)
+    if let Err(err_vec) = create_res {
+        println!("{:#?}", err_vec);
     }
+    // if let Err(ContractError::Revert(Bytes(err_vec))) = create_res {
+    //     let err = err_vec.to_vec();
+    //     println!("{:?}", String::from_utf8(err));
+    // }
     // let _ = counter.increment().send().await?.await?;
 
     // let num = counter.number().call().await;

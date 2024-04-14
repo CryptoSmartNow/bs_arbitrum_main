@@ -31,7 +31,7 @@ static ALLOC: mini_alloc::MiniAlloc = mini_alloc::MiniAlloc::INIT;
 
 use alloy_primitives::Address;
 /// Import items from the SDK. The prelude contains common traits and macros.
-use errors::{BResult, BitsaveErrors, UserNotExist};
+use errors::{BResult, BitsaveErrors, GeneralError, UserNotExist};
 use stylus_sdk::{
     alloy_primitives::{U256, U8},
     call::{call, Call},
@@ -46,10 +46,6 @@ mod user_data;
 // Define some persistent storage using the Solidity ABI.
 // `Counter` will be the entrypoint.
 sol_storage! {
-    // #[entrypoint]
-    pub struct Counter {
-        uint256 number;
-    }
 
     #[entrypoint]
     pub struct Bitsave {
@@ -60,25 +56,7 @@ sol_storage! {
 
 /// impl for borrow and borrowMut
 
-/// Declare that `Counter` is a contract with the following external methods.
-// #[external]
-impl Counter {
-    /// Gets the number from storage.
-    pub fn number(&self) -> U256 {
-        self.number.get()
-    }
-
-    /// Sets a number in storage to a user-specified value.
-    pub fn set_number(&mut self, new_number: U256) {
-        self.number.set(new_number);
-    }
-
-    /// Increments `number` and updates its value in storage.
-    pub fn increment(&mut self) {
-        let number = self.number.get();
-        self.set_number(number + U256::from(1));
-    }
-}
+pub type RResult<T, E = Vec<u8>> = core::result::Result<T, E>;
 
 #[external]
 impl Bitsave {
@@ -92,13 +70,16 @@ impl Bitsave {
     /// Joining bitsave: Initiates
     /// 1. user mapping (address -> savingsMap)
     /// 2. user savings names
-    pub fn join_bitsave(&mut self) -> Result<bool, Vec<u8>> {
+    ///
+    pub fn get_bitsave_user_count(&self) -> U256 {
+        self.user_count.get() + U256::from(200)
+    }
+
+    pub fn join_bitsave(&mut self) -> RResult<Address> {
         // check user doesn't exist
         let fetched_user = self.users_mapping.get(msg::sender());
         if fetched_user.user_exists.get() {
-            return Err(
-                format!("User {:?} has joined bitsave already", fetched_user.user_id).into(),
-            );
+            return Err("Member belongs".as_bytes().to_vec());
         };
 
         // check for joining fee todo
@@ -106,16 +87,14 @@ impl Bitsave {
 
         // incr user count
         let new_user_count = self.user_count.get() + U256::from(1);
-        self.user_count.set(new_user_count);
+        self.user_count.set(U256::from(4));
 
         let mut fetched_user = self.users_mapping.setter(msg::sender());
         // update user data
-        fetched_user.user_exists.set(true);
-        fetched_user.user_id.set(new_user_count);
-        fetched_user.user_address.set(msg::sender());
+        fetched_user.create_user(msg::sender(), new_user_count);
 
         // return user exists txn
-        Ok(fetched_user.user_exists.get())
+        Ok(fetched_user.user_address.get())
     }
 
     /// Create savings:
@@ -125,7 +104,7 @@ impl Bitsave {
         maturity_time: U256,
         penalty_perc: u8,
         use_safe_mode: bool,
-    ) -> Result<(), Vec<u8>> {
+    ) -> RResult<()> {
         // retrieve some data
         // fetch user's data
         let fetched_user = self.users_mapping.get(msg::sender());

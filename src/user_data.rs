@@ -1,5 +1,5 @@
 use alloy_primitives::{Address, U256, U8};
-use stylus_sdk::{block, stylus_proc::sol_storage};
+use stylus_sdk::{block, contract::address, stylus_proc::sol_storage};
 
 use crate::errors::{BitsaveErrors, GeneralError};
 
@@ -32,6 +32,13 @@ impl UserData {
 
     fn calculate_new_interest(&self, amount: U256) -> U256 {
         amount * U256::from(1) / U256::from(100)
+    }
+
+    pub fn create_user(&mut self, address: Address, user_id: U256) -> bool {
+        self.user_address.set(address);
+        self.user_exists.set(true);
+        self.user_id.set(user_id);
+        self.user_exists.get()
     }
 
     fn calculate_balance_from_penalty(amount: U256, penalty_perc: U8) -> U256 {
