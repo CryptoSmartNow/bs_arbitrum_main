@@ -1,6 +1,49 @@
 ![Image](./header.png)
 
-# Stylus Hello World
+# Bitsave
+
+## Description
+Bitsave is a SaveFi protocol that fascilates savings in the Crypto Market. 
+
+## Contract Description
+This smart contract is written using the stylus package on the rust ecosystem. The contract is deployed on arbitrum.
+
+## Contract artficats
+
+
+
+## Contract specification
+
+### Flow of the contract
+1. Join Bitsave: Users have to join with this request sending in the minimum *FEE* _<Price>_. 
+2. Create savings with the requirement: 
+    - nameOfSaving: string
+    - safeMode: boolean (Should the saving be done in the safe mode)
+    - maturityTime: u256 (Timestamp the saving can be retreived with interest and no penalty)
+    - penaltyPercentage: u32 (Percentage to remove for withdrawing early .e.g 1 or 4)
+    - value(): amount to save, includes the *saving charge* _<PRICE>_.
+3. Get savings details:
+    - nameOfSaving: String;
+    Returns: (nameOfSaving, safeMode, amount, maturityTime, penaltyPercentage, startTime)
+4. Increment savings:
+    - nameOfSaving: String;
+    - value(): amount to add
+5. Withdraw savings:
+    - nameOfSaving: String;
+
+### Access points 
+- `get_bitsave_user_count: u256` to get number of opted users. 
+- `get_user_details: UserData` to get a summary of details on a user.
+- `get_bitsave_balance: u256` requires(MasterAddresses) to get total balance on savings only.
+- `get_tokens_balance: u256`
+- `get_accumulated_pool: u256`
+
+### Structs/Tuples
+a. UserData `(user_name: string, user_address: addr, amount_of_savings: u128)`
+b. UserSavings `<ListOfSavingsNames>`
+
+
+# --- Stylus Hello World
 
 Project starter template for writing Arbitrum Stylus programs in Rust using the [stylus-sdk](https://github.com/OffchainLabs/stylus-sdk-rs). It includes a Rust implementation of a basic counter Ethereum smart contract:
 

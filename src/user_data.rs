@@ -5,10 +5,13 @@ use crate::errors::{BitsaveErrors, GeneralError};
 
 sol_storage! {
     pub struct UserData {
+        bool user_exists;
         address user_address;
         uint256 user_id;
-        bool user_exists;
+        uint8 savings_count;
+        string user_name;
         mapping(string => SavingData) savings_map;
+        string[] savings_names;
     }
 
     pub struct SavingData {

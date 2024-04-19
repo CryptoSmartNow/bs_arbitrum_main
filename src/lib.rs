@@ -50,6 +50,9 @@ sol_storage! {
     #[entrypoint]
     pub struct Bitsave {
         uint256 user_count;
+        uint256 token_pool_balance;
+        uint256 accumulated_pool_balance;
+        uint256 general_fund;
         mapping(address => UserData) users_mapping;
     }
 }
@@ -72,14 +75,26 @@ impl Bitsave {
     /// 2. user savings names
     ///
     pub fn get_bitsave_user_count(&self) -> U256 {
-        self.user_count.get() + U256::from(200)
+        self.user_count.get()
     }
 
+    #[payable]
+    pub fn fund(&mut self) -> U256 {
+        let new_balance = self.general_fund.get() + msg::value();
+        self.general_fund.set(new_balance);
+        self.general_fund.get()
+    }
+
+    #[payable]
     pub fn join_bitsave(&mut self) -> RResult<Address> {
         // check user doesn't exist
         let fetched_user = self.users_mapping.get(msg::sender());
         if fetched_user.user_exists.get() {
-            return Err("Member belongs".as_bytes().to_vec());
+            return Err(
+                format!("Member belongs {}", fetched_user.user_address.get())
+                    .as_bytes()
+                    .to_vec(),
+            );
         };
 
         // check for joining fee todo
@@ -87,14 +102,14 @@ impl Bitsave {
 
         // incr user count
         let new_user_count = self.user_count.get() + U256::from(1);
-        self.user_count.set(U256::from(4));
+        self.user_count.set(new_user_count);
 
         let mut fetched_user = self.users_mapping.setter(msg::sender());
         // update user data
         fetched_user.create_user(msg::sender(), new_user_count);
 
         // return user exists txn
-        Ok(fetched_user.user_address.get())
+        Ok(self.users_mapping.get(msg::sender()).user_address.get())
     }
 
     /// Create savings:
