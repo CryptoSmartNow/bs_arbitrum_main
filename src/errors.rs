@@ -11,11 +11,13 @@ pub enum BitsaveErrors {
     UserNotExist(UserNotExist),
     GeneralError(GeneralError),
     FromUtf8Error(FromUtf8Error),
+    InvalidPrice(InvalidPrice),
 }
 
 impl From<BitsaveErrors> for Vec<u8> {
     fn from(val: BitsaveErrors) -> Self {
         match val {
+            BitsaveErrors::InvalidPrice(err) => err.encode(),
             BitsaveErrors::UserNotExist(err) => err.encode(),
             BitsaveErrors::GeneralError(err) => err.encode(),
             BitsaveErrors::FromUtf8Error(err) => err.into_bytes(),

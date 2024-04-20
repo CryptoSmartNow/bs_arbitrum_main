@@ -37,11 +37,10 @@ impl UserData {
         amount * U256::from(1) / U256::from(100)
     }
 
-    pub fn create_user(&mut self, address: Address, user_id: U256, user_name: String) -> bool {
+    pub fn create_user(&mut self, address: Address, user_id: U256, user_name: Vec<u8>) -> bool {
         self.user_address.set(address);
         self.user_exists.set(true);
         self.user_id.set(user_id);
-        self.user_name.set_str(user_name);
         self.user_exists.get()
     }
 

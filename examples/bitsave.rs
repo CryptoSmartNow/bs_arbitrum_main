@@ -6,7 +6,7 @@
 use alloy_primitives::U256;
 use dotenv::dotenv;
 use ethers::{
-    abi::AbiEncode,
+    abi::{decode, AbiEncode, ParamType},
     contract::ContractError,
     middleware::SignerMiddleware,
     prelude::abigen,
@@ -45,12 +45,15 @@ async fn main() -> eyre::Result<()> {
         Bitsave,
         r#"[
             function getBitsaveUserCount() external view returns (uint256)
-            function joinBitsave() external payable returns (address)
+            function getUserDetails(uint8[] memory username) external view returns (string memory, uint256, address)
+            function getBitsaveBalance() external view returns (uint256)
+            function getAccumulatedPool() external view returns (uint256)
+            function getTokensBalance() external view returns (uint256)
+
+            function joinBitsave(uint8[] calldata user_name) external payable returns (address)
             function fund() external payable returns (uint256)
             function createSaving(string calldata name_of_saving, uint256 maturity_time, uint8 penalty_perc, bool use_safe_mode) external
-
             function incrementSaving(string calldata name_of_saving) external
-
             function withdrawSavings(string calldata name_of_saving) external returns (uint256)
         ]"#
     );
@@ -67,13 +70,35 @@ async fn main() -> eyre::Result<()> {
     ));
 
     let bitsave = Bitsave::new(address, client);
+
     // TXs
     let fund_bitsave_res = bitsave.fund().value(2).send().await?.await?;
     println!("{:?}", fund_bitsave_res);
 
-    let join_res = bitsave.join_bitsave().send().await?.await?;
+    let bitsave_balance = bitsave.get_bitsave_balance().call().await;
+    println!("Balance: {:?}", bitsave_balance);
 
-    println!("Join bitsave return value = {:?}", join_res);
+    // let join_res = bitsave
+    //     .join_bitsave("me".as_bytes().to_vec())
+    //     .send()
+    //     .await?
+    //     .await?;
+    // println!("Join bitsave return value = {:?}", join_res);
+
+    println!("{:?}", "xpan".as_bytes().to_vec());
+    let user_data = bitsave
+        .get_user_details("xpan".as_bytes().to_vec())
+        .call()
+        .await;
+    println!("{:?}", user_data);
+    if let Ok((username, user_id, user_address)) = user_data {
+        println!(
+            "User details\nName: {:?}\nId: {user_id}\nAddress: {user_address}",
+            String::from_utf8(username.into()).unwrap()
+        );
+    } else {
+        println!("Err decoding {:?}", user_data);
+    }
 
     // if let Err(ContractError::Revert(Bytes(join_val))) = join_res {
     //     println!("{:?}", String::from_utf8(join_val.encode()));
@@ -82,15 +107,15 @@ async fn main() -> eyre::Result<()> {
     let count_res = bitsave.get_bitsave_user_count().call().await;
     println!("Bitsave user count = {:?}", count_res);
 
-    let create_res = bitsave
-        .create_saving("schoolFee".to_string(), 1714242866.into(), 2, false)
-        .call()
-        .await;
-    println!("Create saving bitsave return value = {:?}", create_res);
-
-    if let Err(err_vec) = create_res {
-        println!("{:#?}", err_vec);
-    }
+    // let create_res = bitsave
+    //     .create_saving("schoolFee".to_string(), 1714242866.into(), 2, false)
+    //     .call()
+    //     .await;
+    // println!("Create saving bitsave return value = {:?}", create_res);
+    //
+    // if let Err(err_vec) = create_res {
+    //     println!("{:#?}", err_vec);
+    // }
     // if let Err(ContractError::Revert(Bytes(err_vec))) = create_res {
     //     let err = err_vec.to_vec();
     //     println!("{:?}", String::from_utf8(err));

@@ -31,7 +31,7 @@ static ALLOC: mini_alloc::MiniAlloc = mini_alloc::MiniAlloc::INIT;
 
 use alloy_primitives::Address;
 /// Import items from the SDK. The prelude contains common traits and macros.
-use errors::{BResult, BitsaveErrors, GeneralError, UserNotExist};
+use errors::{BResult, BitsaveErrors, GeneralError, InvalidPrice, UserNotExist};
 use stylus_sdk::{
     alloy_primitives::{U256, U8},
     call::{call, Call},
@@ -40,6 +40,7 @@ use stylus_sdk::{
 };
 use user_data::UserData;
 
+mod constants;
 mod errors;
 mod user_data;
 
@@ -78,11 +79,11 @@ impl Bitsave {
         self.user_count.get()
     }
 
-    pub fn get_user_details(&self) -> RResult<(String, U256, Address)> {
+    pub fn get_user_details(&self) -> RResult<(Vec<u8>, U256, Address)> {
         let user = self.users_mapping.get(msg::sender());
         if user.user_exists.get() {
             Ok((
-                user.user_name.get_string(),
+                user.user_name.get_string().as_bytes().to_vec(),
                 user.user_id.get(),
                 user.user_address.get(),
             ))
@@ -111,7 +112,7 @@ impl Bitsave {
     }
 
     #[payable]
-    pub fn join_bitsave(&mut self, user_name: String) -> RResult<Address> {
+    pub fn join_bitsave(&mut self, user_name: Vec<u8>) -> RResult<Address> {
         // check user doesn't exist
         let fetched_user = self.users_mapping.get(msg::sender());
         if fetched_user.user_exists.get() {
@@ -123,7 +124,9 @@ impl Bitsave {
         };
 
         // check for joining fee todo
-        // if ()
+        if msg::value() < U256::from(constants::MIN_BS_JOIN_FEE) {
+            return Err(BitsaveErrors::InvalidPrice(InvalidPrice {}).into());
+        }
 
         // incr user count
         let new_user_count = self.user_count.get() + U256::from(1);
