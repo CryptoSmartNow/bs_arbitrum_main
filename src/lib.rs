@@ -141,6 +141,7 @@ impl Bitsave {
     }
 
     /// Create savings:
+    #[payable]
     pub fn create_saving(
         &mut self,
         name_of_saving: String,

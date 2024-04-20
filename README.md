@@ -38,6 +38,11 @@ This smart contract is written using the stylus package on the rust ecosystem. T
 - `get_tokens_balance: u256`
 - `get_accumulated_pool: u256`
 
+- `join_bitsave`
+- `create_saving`
+- `increment_saving`
+- `withdraw_saving`
+
 ### Structs/Tuples
 a. UserData `(user_name: string, user_id: u256, user_address: addr, amount_of_savings: u128)`
 b. UserSavings `<ListOfSavingsNames>`
