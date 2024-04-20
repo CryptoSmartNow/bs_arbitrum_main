@@ -39,7 +39,7 @@ This smart contract is written using the stylus package on the rust ecosystem. T
 - `get_accumulated_pool: u256`
 
 ### Structs/Tuples
-a. UserData `(user_name: string, user_address: addr, amount_of_savings: u128)`
+a. UserData `(user_name: string, user_id: u256, user_address: addr, amount_of_savings: u128)`
 b. UserSavings `<ListOfSavingsNames>`
 
 

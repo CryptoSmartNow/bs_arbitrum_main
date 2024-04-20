@@ -78,6 +78,31 @@ impl Bitsave {
         self.user_count.get()
     }
 
+    pub fn get_user_details(&self) -> RResult<(String, U256, Address)> {
+        let user = self.users_mapping.get(msg::sender());
+        if user.user_exists.get() {
+            Ok((
+                user.user_name.get_string(),
+                user.user_id.get(),
+                user.user_address.get(),
+            ))
+        } else {
+            Err(BitsaveErrors::UserNotExist(UserNotExist {}).into())
+        }
+    }
+
+    pub fn get_bitsave_balance(&self) -> U256 {
+        self.general_fund.get()
+    }
+
+    pub fn get_accumulated_pool(&self) -> U256 {
+        self.accumulated_pool_balance.get()
+    }
+
+    pub fn get_tokens_balance(&self) -> U256 {
+        self.token_pool_balance.get()
+    }
+
     #[payable]
     pub fn fund(&mut self) -> U256 {
         let new_balance = self.general_fund.get() + msg::value();
@@ -86,7 +111,7 @@ impl Bitsave {
     }
 
     #[payable]
-    pub fn join_bitsave(&mut self) -> RResult<Address> {
+    pub fn join_bitsave(&mut self, user_name: String) -> RResult<Address> {
         // check user doesn't exist
         let fetched_user = self.users_mapping.get(msg::sender());
         if fetched_user.user_exists.get() {
@@ -106,7 +131,7 @@ impl Bitsave {
 
         let mut fetched_user = self.users_mapping.setter(msg::sender());
         // update user data
-        fetched_user.create_user(msg::sender(), new_user_count);
+        fetched_user.create_user(msg::sender(), new_user_count, user_name);
 
         // return user exists txn
         Ok(self.users_mapping.get(msg::sender()).user_address.get())

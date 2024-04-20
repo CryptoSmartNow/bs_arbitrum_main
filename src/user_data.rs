@@ -8,8 +8,8 @@ sol_storage! {
         bool user_exists;
         address user_address;
         uint256 user_id;
-        uint8 savings_count;
         string user_name;
+        uint8 savings_count;
         mapping(string => SavingData) savings_map;
         string[] savings_names;
     }
@@ -37,10 +37,11 @@ impl UserData {
         amount * U256::from(1) / U256::from(100)
     }
 
-    pub fn create_user(&mut self, address: Address, user_id: U256) -> bool {
+    pub fn create_user(&mut self, address: Address, user_id: U256, user_name: String) -> bool {
         self.user_address.set(address);
         self.user_exists.set(true);
         self.user_id.set(user_id);
+        self.user_name.set_str(user_name);
         self.user_exists.get()
     }
 
