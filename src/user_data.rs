@@ -33,6 +33,8 @@ impl UserData {
         self.user_id.get()
     }
 
+    /// TODO: bitsave interest calculator:
+    /// Uses bitsave formulae; to be integrated through the bitsave's token
     fn calculate_new_interest(&self, amount: U256) -> U256 {
         amount * U256::from(1) / U256::from(100)
     }

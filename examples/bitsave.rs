@@ -100,7 +100,7 @@ async fn main() -> eyre::Result<()> {
         println!("Err decoding {:?}", user_data);
     }
 
-    // if let Err(ContractError::Revert(Bytes(join_val))) = join_res {
+    // if let Err(ContractErr   or::Revert(Bytes(join_val))) = join_res {
     //     println!("{:?}", String::from_utf8(join_val.encode()));
     // };
 
