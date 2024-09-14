@@ -198,6 +198,11 @@ impl Bitsave {
 
     /// Withdraw savings
     pub fn withdraw_savings(&mut self, name_of_saving: String) -> Result<U256, Vec<u8>> {
+
+        if (msg::reentrant()) {
+            panic!(Err("Reentrant call not allowed!"));
+        }
+
         let fetched_user = self.users_mapping.get(msg::sender());
         if !fetched_user.user_exists.get() {
             return Err("User doesn't exist".into());
