@@ -2,6 +2,7 @@ use alloy_primitives::{Address, U256, U8};
 use stylus_sdk::{block, contract::address, stylus_proc::sol_storage};
 
 use crate::errors::{BitsaveErrors, GeneralError};
+use crate::constants;
 
 sol_storage! {
     pub struct UserData {
@@ -33,10 +34,27 @@ impl UserData {
         self.user_id.get()
     }
 
-    /// TODO: bitsave interest calculator:
     /// Uses bitsave formulae; to be integrated through the bitsave's token
-    fn calculate_new_interest(&self, amount: U256) -> U256 {
-        amount * U256::from(1) / U256::from(100)
+    fn calculate_new_interest(
+        principal: U256,
+        time_interval: U256, // Time interval in seconds
+        vault_state: U256,
+        total_value_locked: U256,
+    ) -> U256 {
+        use constants::interest::{TOTAL_SUPPLY, MAX_SUPPLY};
+        // Calculate the Current Reserve Percentage (CRP)
+        let crp = ((U256::from(TOTAL_SUPPLY) - vault_state) * U256::from(100)) / vault_state;
+
+        // Calculate the BS Rate
+        let bs_rate = U256::from(MAX_SUPPLY) / (crp * total_value_locked);
+
+        // Calculate the number of years taken
+        let years_taken = time_interval / U256::from(constants::YEAR_IN_SECONDS);
+
+        // Calculate accumulated interest
+        let accumulated_interest = (principal * bs_rate * years_taken) / (U256::from(100) * U256::from(constants::interest::DIVISOR));
+
+        accumulated_interest
     }
 
     pub fn create_user(&mut self, address: Address, user_id: U256, user_name: Vec<u8>) -> bool {

@@ -55,6 +55,9 @@ sol_storage! {
         uint256 accumulated_pool_balance;
         uint256 general_fund;
         mapping(address => UserData) users_mapping;
+        // *** Storage requiring house modifiers ***
+        uint256 public currentVaultState;
+        uint256 public currentTotalValueLocked;
     }
 }
 
